@@ -1,2 +1,0 @@
-SupplyPort 2	Current turn4	Port pressure 20
-Elapsed	Pressure	Flow rate	Modelled cm3 H2	
