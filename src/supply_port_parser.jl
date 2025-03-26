@@ -3,7 +3,7 @@ using CSV
 using DataFrames
 using Plots
 
-file="SupplyPort_1_8.txt"
+file="SupplyPort_1_26_4.txt"
 path = joinpath(@__DIR__, "data", "resultSupply", file);
 pressure_inlet = 50
 open(path,"r") do f
@@ -32,7 +32,7 @@ dp = 0
 dt = 0
 flow_coefficient = 0.00137
 dp_test_plot = []
-initial_rate = 570
+initial_rate = 0
 prev_model_vol_B += initial_rate
 for i in eachindex(result_port_raw.Elapsed)
     cur_vol = (result_port_raw.Pressure[i]*(v_B+v_C2)/t_B)*n_t/n_p
@@ -61,4 +61,4 @@ end
 plot(result_port_raw.Elapsed,[model_flow_rate,rate_B,result_port_raw."Flow rate"], label = ["H2 rate cm3/s model" "H2 rate cm3/s sensor" "H2 rate cm3/s model GRAM"])
 plot!(twinx(),result_port_raw.Elapsed, dp_test_plot,legend=:topleft)
 plot(result_port_raw.Elapsed,[real_vol_B, model_vol_B,result_port_raw."Modelled cm3 H2"], label = ["H2 sensor in B" "H2 model julia" "H2 model GRAM"])
-# rate_B.= / result_port_raw.Elapsed.
+# plot value of deviation in bar
