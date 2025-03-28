@@ -68,5 +68,12 @@ for i in eachindex(result_port_raw.Elapsed)
 end
 plot(result_port_raw.Elapsed,[model_flow_rate,rate_B,result_port_raw."Flow rate"], label = ["H2 rate cm3/s model" "H2 rate cm3/s sensor" "H2 rate cm3/s model GRAM"])
 plot!(twinx(),result_port_raw.Elapsed, dp_test_plot,legend=:topleft)
-plot(result_port_raw.Elapsed,[real_vol_B,model_vol_B,result_port_raw."Modelled cm3 H2"], label = ["H2 sensor in B" "H2 model julia" "H2 model GRAM"])
+plot_orig = plot(result_port_raw.Elapsed,[real_vol_B,model_vol_B,result_port_raw."Modelled cm3 H2"], label = ["H2 sensor in B" "H2 model julia" "H2 model GRAM"])
 # plot value of deviation in bar
+
+file_model="SupplyPort_5_0.txt"
+path_model = joinpath(@__DIR__, "data", "resultSupply", file_model);
+result_port_model = DataFrame(CSV.File(path_model, delim = '\t', header=2, skipto=3, silencewarnings = true))
+plt3 = plot(result_port_model.Elapsed, result_port_model.Pressure, seriestype=:scatter, label="data")
+plot_model = plot!(plot_orig, result_port_model.Elapsed,result_port_model."Modelled cm3 H2", label = "H2 pre model GRAM", color = 4)
+
