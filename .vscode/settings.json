@@ -3,6 +3,5 @@
         
         "ALL_MODULES_EXCEPT_MAIN",   
         "-Statistics.",     
-    ],
-    "julia.environmentPath": "f:\\PhyJL\\src"
+    ]
 }
