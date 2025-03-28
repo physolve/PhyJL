@@ -3,7 +3,7 @@ using CSV
 using DataFrames
 using Plots
 
-file="SupplyPort_2_27_5.txt"
+file="SupplyPort_1_28_0.txt"
 path = joinpath(@__DIR__, "data", "resultSupply", file);
 pressure_inlet = 50
 open(path,"r") do f
@@ -12,7 +12,6 @@ open(path,"r") do f
     global pressure_inlet = parse(Float64, split(infos[3]," ")[3])
 end
 result_port_raw = DataFrame(CSV.File(path, delim = '\t', header=2, skipto=3, silencewarnings = true))
-plt2 = plot(result_port_raw.Elapsed, result_port_raw.Pressure, seriestype=:scatter, label="data")
 
 # calculate rate with current value of volume
 v_B = 55.5544 # cm3
@@ -30,7 +29,7 @@ model_vol_B = []
 prev_model_vol_B = prev_vol
 dp = 0
 dt = 0
-flow_coefficient = 0.0031
+flow_coefficient = 0.00137
 dp_test_plot = []
 initial_rate = 0
 prev_model_vol_B += initial_rate
@@ -43,14 +42,13 @@ for i in eachindex(result_port_raw.Elapsed)
         push!(model_vol_B, model_vol_B[end])
         break
     end
-    cur_vol = (result_port_raw.Pressure[i+1]*(v_B+v_C2)/t_B)*n_t/n_p
-    push!(real_vol_B, cur_vol)
     dp = pressure_inlet-result_port_raw.Pressure[i+1]
     if(dp < 0.33) dp = 0 end
     push!(dp_test_plot, dp)
     dt = result_port_raw.Elapsed[i+1]-prev_time
-    
+    cur_vol = (result_port_raw.Pressure[i+1]*(v_B+v_C2)/t_B)*n_t/n_p
     if(i > 1)
+        push!(real_vol_B, cur_vol)
         push!(rate_B, (cur_vol-prev_vol)/(dt))
         if(result_port_raw.Pressure[i+1] < 1/2*pressure_inlet)
             push!(model_flow_rate, 0.471*6950*flow_coefficient*pressure_inlet*sqrt(1/(0.07*t_B))*16.6667)
@@ -58,6 +56,7 @@ for i in eachindex(result_port_raw.Elapsed)
             push!(model_flow_rate, 6950*flow_coefficient*pressure_inlet*(1-2*dp/(3*pressure_inlet))*sqrt(dp/(pressure_inlet*0.07*t_B))*16.6667)
         end
     else
+        push!(real_vol_B, prev_vol)
         push!(rate_B, 0)
         push!(model_flow_rate, 0)
     end
@@ -66,14 +65,15 @@ for i in eachindex(result_port_raw.Elapsed)
     global prev_vol = cur_vol
     global prev_time = result_port_raw.Elapsed[i+1]
 end
-plot(result_port_raw.Elapsed,[model_flow_rate,rate_B,result_port_raw."Flow rate"], label = ["H2 rate cm3/s model" "H2 rate cm3/s sensor" "H2 rate cm3/s model GRAM"])
-plot!(twinx(),result_port_raw.Elapsed, dp_test_plot,legend=:topleft)
+plt6 = plot(result_port_raw.Elapsed,[model_flow_rate,rate_B,result_port_raw."Flow rate"], label = ["H2 rate cm3/s model" "H2 rate cm3/s sensor" "H2 rate cm3/s model GRAM"])
+# plot!(twinx(),result_port_raw.Elapsed, dp_test_plot,legend=:topleft)
 plot_orig = plot(result_port_raw.Elapsed,[real_vol_B,model_vol_B,result_port_raw."Modelled cm3 H2"], label = ["H2 sensor in B" "H2 model julia" "H2 model GRAM"])
 # plot value of deviation in bar
 
-file_model="SupplyPort_5_0.txt"
+file_model="SupplyPort_4_28_0.txt"
 path_model = joinpath(@__DIR__, "data", "resultSupply", file_model);
 result_port_model = DataFrame(CSV.File(path_model, delim = '\t', header=2, skipto=3, silencewarnings = true))
-plt3 = plot(result_port_model.Elapsed, result_port_model.Pressure, seriestype=:scatter, label="data")
-plot_model = plot!(plot_orig, result_port_model.Elapsed,result_port_model."Modelled cm3 H2", label = "H2 pre model GRAM", color = 4)
-
+plt4 = plot(result_port_raw.Elapsed,result_port_raw.Pressure)
+plt5 = plot(plt4,result_port_model.Elapsed,result_port_model.Pressure)
+plot(plt6, result_port_model.Elapsed,result_port_model."Flow rate", label = "H2 rate cm3/s pre model GRAM")
+plot_model = plot(plot_orig, result_port_model.Elapsed,result_port_model."Modelled cm3 H2", label = "H2 pre model GRAM", color = 4)
