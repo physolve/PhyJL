@@ -65,15 +65,51 @@ for i in eachindex(result_port_raw.Elapsed)
     global prev_vol = cur_vol
     global prev_time = result_port_raw.Elapsed[i+1]
 end
-plt6 = plot(result_port_raw.Elapsed,[model_flow_rate,rate_B,result_port_raw."Flow rate"], label = ["H2 rate cm3/s model" "H2 rate cm3/s sensor" "H2 rate cm3/s model GRAM"])
+
+theme(:wong2)
+
 # plot!(twinx(),result_port_raw.Elapsed, dp_test_plot,legend=:topleft)
-plot_orig = plot(result_port_raw.Elapsed,[real_vol_B,model_vol_B,result_port_raw."Modelled cm3 H2"], label = ["H2 sensor in B" "H2 model julia" "H2 model GRAM"])
+# plot_orig = plot(result_port_raw.Elapsed,[real_vol_B,model_vol_B,result_port_raw."Modelled cm3 H2"], label = ["H2 sensor in B" "H2 model julia" "H2 model GRAM"])
+plot_orig = plot(result_port_raw.Elapsed,[real_vol_B,model_vol_B];
+    lw=2, label = ["Датчик (B+C2)" "Модель Julia"],framestyle = :box,
+)
+xlabel!("Время, с")
+ylabel!("Объем \$H_2,\\ см^3 \$")
 # plot value of deviation in bar
 
 file_model="SupplyPort_4_28_0.txt"
 path_model = joinpath(@__DIR__, "data", "resultSupply", file_model);
 result_port_model = DataFrame(CSV.File(path_model, delim = '\t', header=2, skipto=3, silencewarnings = true))
-plt4 = plot(result_port_raw.Elapsed,result_port_raw.Pressure)
-plt5 = plot(plt4,result_port_model.Elapsed,result_port_model.Pressure)
-plot(plt6, result_port_model.Elapsed,result_port_model."Flow rate", label = "H2 rate cm3/s pre model GRAM")
-plot_model = plot(plot_orig, result_port_model.Elapsed,result_port_model."Modelled cm3 H2", label = "H2 pre model GRAM", color = 4)
+plt4 = plot(result_port_raw.Elapsed,result_port_raw.Pressure;
+    label = "Давление (B+C2)", lw=2, framestyle = :box,
+)
+plot_presure = plot(plt4,result_port_model.Elapsed,result_port_model.Pressure;
+    label = "Модель GRAM", lw=2, legend=:topleft,
+)
+xlabel!("Время, с")
+ylabel!("Давление, бар")
+title!("Расчет давления")
+xlims!(0,10)
+xticks!([0:1:10;])
+vline!([7.78],primary=false,lw=2,linecolor=:blue,linestyle = :dash)
+annotate!(7.9, 3, text("7.78 с", 10, :left))
+
+plt6 = plot(result_port_raw.Elapsed,[rate_B,model_flow_rate];
+    lw=2, label = ["Датчик (B+C2)" "Модель Julia"], framestyle = :box, legend=:bottomleft,
+)
+plot(plt6, result_port_model.Elapsed,result_port_model."Flow rate"; 
+    lw=2, label = "Пре-расчет GRAM",
+)
+xlabel!("Время, с")
+ylabel!("Поток \$H_2,\\ см^3/с \$")
+xlims!(0,10)
+xticks!([0:1:10;])
+vline!([7.78],primary=false,lw=2,linecolor=:blue,linestyle = :dash)
+annotate!(8, 140, text("7.78 с", 10, :left))
+
+plot_model = plot(plot_orig, result_port_model.Elapsed,result_port_model."Modelled cm3 H2", label = "Пре-расчет GRAM", color = 4)
+title!("Сравнение расчетов")
+plot!(legend=:top, legendcolumns=3)
+xlims!(0,8)
+xticks!([0:1:8;])
+
