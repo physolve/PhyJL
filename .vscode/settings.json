@@ -3,5 +3,6 @@
         
         "ALL_MODULES_EXCEPT_MAIN",   
         "-Statistics.",     
-    ]
+    ],
+    "julia.environmentPath": "${workspaceFolder:src}"
 }
