@@ -49,9 +49,9 @@ p1 = []
 p2 = []
 flow_rate = []
 delta_P = P1 - P2
-dp_coef_ch = 0.0375*delta_P*1e-5+1
-(2 / (gamma + 1))^(gamma / (gamma - 1))*result_port_raw.Storage[1] # pressure of P2 for subsonic
-dp_coef_subs = 1 #0.016875*delta_P*1e-5+0.525
+# dp_coef_ch = 0.0375*delta_P*1e-5+1
+# (2 / (gamma + 1))^(gamma / (gamma - 1))*result_port_raw.Storage[1] # pressure of P2 for subsonic
+# dp_coef_subs = 1 #0.016875*delta_P*1e-5+0.525
 
 for t in 0:dt:t_final
     global delta_P = P1 - P2
@@ -93,6 +93,9 @@ end
 real_m_dot_rate_R = []
 current_mole = 0
 current_time = 0
+
+residual_pressure = [] # Elapsed less than model!
+
 for i in eachindex(result_port_raw.Elapsed)
     if(i==1)
         global current_mole = result_port_raw.Reaction[1]*1e5*V2/(R * T)
@@ -109,14 +112,19 @@ for i in eachindex(result_port_raw.Elapsed)
             push!(real_m_dot_rate_R, real_m_dot_rate_R[end]) 
         end
     end
+    # residual for reaction 
+    local index_close = findmin(x->abs(x-result_port_raw.Elapsed[i]), time)[2]
+    push!(residual_pressure,result_port_raw.Reaction[i] - p2[index_close])
+    
 end
 plot_pressure_real = plot(result_port_raw.Elapsed,[result_port_raw.Storage,result_port_raw.Reaction], label = ["Pressure S real" "Pressure R real"],
 title = "Pressure of $file", titlefont=font(12))
-pressure_real_and_model = plot(plot_pressure_real,time,[p1,p2], label = ["Pressure S model Julia" "Pressure R model Julia"])
+pressure_real_and_model = plot(plot_pressure_real,time,[p1,p2],
+label = ["Pressure S model Julia" "Pressure R model Julia"], legend=:bottomright)
 plot_rate_real = plot(result_port_raw.Elapsed, real_m_dot_rate_R, label = "Rate real",
 title = "Rate of $file", titlefont=font(12))
 rate_real_and_model = plot(plot_rate_real, time, flow_rate, label = "Rate model Julia")
-plot(pressure_real_and_model, rate_real_and_model)
+# plot(pressure_real_and_model, rate_real_and_model)
 
 file_model="2025-04-10_R1_$(runT)_model.txt"
 path_model = joinpath(@__DIR__, "data", dir, file_model);
@@ -129,3 +137,10 @@ plot(pressure_model, rate_model)
 # plot(plt6, result_port_model.Elapsed,result_port_model."Flow rate", label = "H2 rate cm3/s pre model GRAM")
 # plot_model = plot(plot_orig, result_port_model.Elapsed,result_port_model."Modelled cm3 H2", label = "H2 pre model GRAM", color = 4)
 # plot(rate_model, result_port_raw.Elapsed, result_port_raw."Flow rate", label = "Rate GRAM on spot")
+
+# residual
+residual_plot = plot(result_port_raw.Elapsed,residual_pressure)
+hline!([0],primary=false,lw=1, linecolor=:black, linestyle = :dash)
+ylims!(-1, 1)
+plot(pressure_real_and_model, residual_plot, layout = (2, 1)) 
+
