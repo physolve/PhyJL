@@ -7,12 +7,6 @@ using DataFrames
 using Plots
 using Glob
 
-# original
-runT = 5
-file="2025-04-10_R1_$(runT).txt"
-dir = "resultLeakage"
-path = joinpath(@__DIR__, "data", dir, file);
-
 # parameters
 v_B = 55.5544 # cm3
 v_C2 = 51.689 # cm3
@@ -33,9 +27,8 @@ V1 = 55.5544e-6  # m³
 V2 = 25.79e-6    # m³
 
 # needle dependent
-Cv_R0 = 0.00085 * 1.7e-5  # Convert Cv to SI units (m³/s·Pa^0.5)
+Cv_R0 = 0.00085 * 0.8 * 1.7e-5  # Convert Cv to SI units (m³/s·Pa^0.5)
 Cv_R1 = 0.00017 * 1.7e-5  # Convert Cv to SI units (m³/s·Pa^0.5)
-
 # pack
 dir = "resultLeakage"
 dir_glob = joinpath(@__DIR__, "data", dir);
@@ -47,12 +40,18 @@ files_real_R0 = setdiff(files_R0, files_R0_model)
 files_real_R1 = setdiff(files_R1, files_R1_model)
 
 all_plots_R1 = []
+
+os_dependent_slash = '/'
+if Sys.iswindows()
+    os_dependent_slash = raw"\\"
+end
 # parsing TEST WITH LOW PRESSURE 4 bar and high pressure 20 bar 
 for file in files_real_R1
     local path = file
     local pressure_storage = 50
     local pressure_reaction = 0
-    local plot_title = split(file,"/")[end]
+
+    local plot_title = split(path, os_dependent_slash)[end]
     open(path,"r") do f
         s = readline(f)
         infos = split(s,"\t")
@@ -62,7 +61,7 @@ for file in files_real_R1
     local result_port_raw = DataFrame(CSV.File(path, delim = '\t', header=2, skipto=3, silencewarnings = true))
     
     # Initial conditions
-    local Cv = Cv_R1 * (0.025*(pressure_storage-pressure_reaction)+0.8)
+    local Cv = Cv_R1
     local P1 = pressure_storage*1e5  # Pa
     local P2 = pressure_reaction*1e5  # Pa
     local t_final = result_port_raw.Elapsed[end]  # s ? from file last 
@@ -72,6 +71,8 @@ for file in files_real_R1
     local p1 = []
     local p2 = []
     local flow_rate = []
+    local ch_cf_R1 = 1.35*log10(pressure_storage-pressure_reaction)
+    local subs_cf_R1 = 0.75*log10(pressure_storage-pressure_reaction)
     for t in 0:dt:t_final
         local delta_P = P1 - P2
         if delta_P > 0
@@ -79,13 +80,12 @@ for file in files_real_R1
             Pup, Pdown = P1, P2
             # Check if flow is choked
             if Pdown / Pup < (2 / (gamma + 1))^(gamma / (gamma - 1))
-                # Choked flow
-                m_dot = Cv * Pup * sqrt((gamma * M) / (R * T) * (2 / (gamma + 1)) ^ ((gamma + 1) / (gamma - 1)))
+                # Choked flow 
+                m_dot = Cv * ch_cf_R1 * Pup * sqrt((gamma * M) / (R * T) * (2 / (gamma + 1)) ^ ((gamma + 1) / (gamma - 1)))
             else
                 # Subsonic flow
-                # dp_coef = 0.00455*delta_P*1e-5+0.66451
                 term = (Pdown / Pup) ^ (2 / gamma) - (Pdown / Pup) ^ ((gamma + 1) / gamma)
-                m_dot = Cv * Pup * sqrt((2 * gamma * M) / ((gamma - 1) * R * T) * term)
+                m_dot = Cv * Pup * subs_cf_R1 * sqrt((2 * gamma * M) / ((gamma - 1) * R * T) * term)
             end
         else
             # No flow (delta_P <= 0)
@@ -155,7 +155,7 @@ for file in files_real_R0
     local path = file
     local pressure_storage = 50
     local pressure_reaction = 0
-    local plot_title = split(file,"/")[end]
+    local plot_title = split(file,os_dependent_slash)[end]
     open(path,"r") do f
         s = readline(f)
         infos = split(s,"\t")
@@ -165,7 +165,7 @@ for file in files_real_R0
     local result_port_raw = DataFrame(CSV.File(path, delim = '\t', header=2, skipto=3, silencewarnings = true))
     
     # Initial conditions
-    local Cv = Cv_R0 * (0.02714*(pressure_storage-pressure_reaction)+0.6143)
+    local Cv = Cv_R0
     local P1 = pressure_storage*1e5  # Pa
     local P2 = pressure_reaction*1e5  # Pa
     local t_final = result_port_raw.Elapsed[end]  # s ? from file last 
@@ -175,6 +175,8 @@ for file in files_real_R0
     local p1 = []
     local p2 = []
     local flow_rate = []
+    local ch_cf_R0 = 1.35*log10(pressure_storage-pressure_reaction)
+    local subs_cf_R0 = 0.75*log10(pressure_storage-pressure_reaction)
     for t in 0:dt:t_final
         local delta_P = P1 - P2
         if delta_P > 0
@@ -183,12 +185,12 @@ for file in files_real_R0
             # Check if flow is choked
             if Pdown / Pup < (2 / (gamma + 1))^(gamma / (gamma - 1))
                 # Choked flow
-                m_dot = Cv * Pup * sqrt((gamma * M) / (R * T) * (2 / (gamma + 1)) ^ ((gamma + 1) / (gamma - 1)))
+                m_dot = Cv * Pup * ch_cf_R0 * sqrt((gamma * M) / (R * T) * (2 / (gamma + 1)) ^ ((gamma + 1) / (gamma - 1)))
             else
                 # Subsonic flow
                 # dp_coef = 0.00455*delta_P*1e-5+0.66451
                 term = (Pdown / Pup) ^ (2 / gamma) - (Pdown / Pup) ^ ((gamma + 1) / gamma)
-                m_dot = Cv * Pup * sqrt((2 * gamma * M) / ((gamma - 1) * R * T) * term)
+                m_dot = Cv * Pup * subs_cf_R0 * sqrt((2 * gamma * M) / ((gamma - 1) * R * T) * term)
             end
         else
             # No flow (delta_P <= 0)
@@ -250,3 +252,7 @@ for file in files_real_R0
 end
 
 plot(all_plots_R0..., layout = length(all_plots_R0), size=(1200,1200))
+
+all_plots = []
+append!(all_plots, all_plots_R0, all_plots_R1)
+plot(all_plots..., layout = length(all_plots), size=(1200,1200))
