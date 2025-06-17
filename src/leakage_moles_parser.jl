@@ -3,7 +3,7 @@ using CSV
 using DataFrames
 using Plots
 runT = 5
-file="2025-04-10_R1_$(runT).txt"
+file="2025-04-14_R1_$(runT).txt"
 dir = "resultLeakage"
 path = joinpath(@__DIR__, "data", dir, file);
 
@@ -52,7 +52,8 @@ delta_P = P1 - P2
 # dp_coef_ch = 0.0375*delta_P*1e-5+1
 # (2 / (gamma + 1))^(gamma / (gamma - 1))*result_port_raw.Storage[1] # pressure of P2 for subsonic
 # dp_coef_subs = 1 #0.016875*delta_P*1e-5+0.525
-
+dp_coef_ch = 1.35*log10(result_port_raw.Storage[1]-result_port_raw.Reaction[1])
+dp_coef_subs = 0.75*log10(result_port_raw.Storage[1]-result_port_raw.Reaction[1])
 for t in 0:dt:t_final
     global delta_P = P1 - P2
     if delta_P > 0
@@ -126,7 +127,7 @@ title = "Rate of $file", titlefont=font(12))
 rate_real_and_model = plot(plot_rate_real, time, flow_rate, label = "Rate model Julia")
 # plot(pressure_real_and_model, rate_real_and_model)
 
-file_model="2025-04-10_R1_$(runT)_model.txt"
+file_model="2025-04-14_R1_$(runT)_model.txt"
 path_model = joinpath(@__DIR__, "data", dir, file_model);
 result_port_model = DataFrame(CSV.File(path_model, delim = '\t', header=2, skipto=3, silencewarnings = true))
 pressure_model = plot(pressure_real_and_model,result_port_model.Elapsed,[result_port_model.Storage,result_port_model.Reaction], 
