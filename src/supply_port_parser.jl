@@ -53,6 +53,7 @@ for file in fast_AR1
     resultSupply_raw[:,1] = x_sec
     # local resultSupply_raw = DataFrame(CSV.File(path, delim = ',', header=0, skipto=1, silencewarnings = true))
     # local plot_title = split(path, os_dependent_slash)[end]
+    
     local rate = 0
     for i in eachindex(resultSupply_raw.time)
         if(resultSupply_raw.value[i] > 0.528*pressure_inlet[file_n])
